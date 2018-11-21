@@ -52,6 +52,7 @@
     "flow-typed": "^2.5.1",
     "jest": "^23.6.0",
     "jest-flow-transform": "^1.0.1",
+    "pre-commit": "^1.2.2",
     "uuid": "^3.3.2"
   },
   "dependencies": {

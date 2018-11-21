@@ -1,22 +1,22 @@
-// @flow
+//      
 const os = require('os');
 const si = require('systeminformation');
 const EventEmitter = require('events');
 
-type SystemStatsOptions = {
-  frequency: number,
-};
+                           
+                    
+  
 
-const defaultOptions: SystemStatsOptions = {
+const defaultOptions                     = {
   frequency: 2000,
 };
 
 
 class SystemStats extends EventEmitter {
-  updateFrequency: number;
-  intervalId: IntervalID;
+                          
+                         
 
-  constructor(options?: SystemStatsOptions = defaultOptions) {
+  constructor(options                      = defaultOptions) {
     super();
     this.updateFrequency = options.frequency || 1000;
     this.intervalId = setInterval(this.collectStats.bind(this), this.updateFrequency);

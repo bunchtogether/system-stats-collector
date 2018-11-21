@@ -1,4 +1,7 @@
 // @flow
+declare var jest: any
+declare var describe: any
+declare var test: any
 
 const expect = require('expect');
 const SystemStats = require('../src');
@@ -10,6 +13,7 @@ const STATS_FREQUENCY = 500;
 describe('Collect Stats', () => {
   test('Collect SystemStats', async () => {
     const statsCollector = new SystemStats({ frequency: STATS_FREQUENCY });
+    let collectStatsClosed = false;
     statsCollector.on('stats', (data) => {
       expect(data).toMatchObject(expect.objectContaining({
         cpu: {
@@ -53,7 +57,7 @@ describe('Collect Stats', () => {
 
       // CPU
       expect(Array.isArray(data.cpu.cores)).toEqual(true);
-      data.cpu.cores.forEach(core => {
+      data.cpu.cores.forEach((core) => {
         expect(core).toMatchObject({
           load: expect.any(Number),
           load_user: expect.any(Number),
@@ -61,7 +65,7 @@ describe('Collect Stats', () => {
           load_nice: expect.any(Number),
           load_irq: expect.any(Number),
           idle: expect.any(Number),
-        })
+        });
         expect(Math.round(core.load + core.idle)).toBeLessThanOrEqual(100);
         expect(core.load_user + core.load_system + core.load_nice + core.load_irq).toBeGreaterThan(core.load - 0.01); // 0.01% margin of error
         expect(core.load_user + core.load_system + core.load_nice + core.load_irq).toBeLessThan(core.load + 0.01); // 0.01% margin of error
@@ -83,19 +87,23 @@ describe('Collect Stats', () => {
 
       // Load
       // If loadavg is 24 that means on average there are 24 processes in the job queue
-      expect(data.load['1m']).toBeGreaterThanOrEqualTo(0);
-      expect(data.load['5m']).toBeGreaterThanOrEqualTo(0);
-      expect(data.load['15m']).toBeGreaterThanOrEqualTo(0);
+      expect(data.load['1m']).toBeGreaterThan(0);
+      expect(data.load['5m']).toBeGreaterThan(0);
+      expect(data.load['15m']).toBeGreaterThan(0);
 
       // timestamp
       expect(data.timestamp).toBeLessThan(Date.now());
       expect(data.timestamp).toBeGreaterThan(Date.now() - STATS_FREQUENCY);
+
+      // Do not collect stats after close
+      expect(collectStatsClosed).toEqual(false);
     });
     statsCollector.on('error', (error) => {
-      console.error('Error Occured', error);
+      console.error('Stats Collector Error', error); //eslint-disable-line
     });
-    statsCollector.on('close', (data) => {
-      console.log('CLOSED STATS COLLECTOR');
+    statsCollector.on('close', () => {
+      collectStatsClosed = true;
+      console.log('Stats Collector Closed'); //eslint-disable-line
     });
     await new Promise((resolve) => setTimeout(resolve, 5000));
     statsCollector.close();
