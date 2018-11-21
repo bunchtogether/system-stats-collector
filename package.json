@@ -2,7 +2,7 @@
   "name": "system-stats-collector",
   "version": "0.0.1",
   "description": "System Stats Collector",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "repository": "git@github.com:bunchtogether/system-stats-collector.git",
   "author": "snehesht <mail@snehesh.me>",
   "license": "MIT",
