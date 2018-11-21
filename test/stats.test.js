@@ -1,19 +1,103 @@
 // @flow
 
+const expect = require('expect');
 const SystemStats = require('../src');
 
-jest.setTimeout(60000);
+jest.setTimeout(600000);
+
+const STATS_FREQUENCY = 500;
 
 describe('Collect Stats', () => {
   test('Collect SystemStats', async () => {
-    const statsCollector = new SystemStats({ frequency: 3000 });
+    const statsCollector = new SystemStats({ frequency: STATS_FREQUENCY });
     statsCollector.on('stats', (data) => {
-      console.log('NEW STATS', data);
+      expect(data).toMatchObject(expect.objectContaining({
+        cpu: {
+          average: {
+            load: expect.any(Number),
+            load_user: expect.any(Number),
+            load_system: expect.any(Number),
+            load_nice: expect.any(Number),
+            load_irq: expect.any(Number),
+            idle: expect.any(Number),
+          },
+          coreCount: expect.any(Number),
+          cores: expect.any(Array),
+        },
+        network: {
+          iface: expect.any(String),
+          operstate: expect.any(String),
+          rx: expect.any(Number),
+          tx: expect.any(Number),
+          rx_sec: expect.any(Number),
+          tx_sec: expect.any(Number),
+          ms: expect.any(Number),
+        },
+        memory: {
+          totalBytes: expect.any(Number),
+          freeBytes: expect.any(Number),
+          usedBytes: expect.any(Number),
+          utilizedPercent: expect.any(Number),
+        },
+        uptime: {
+          startedAt: expect.any(Number),
+          seconds: expect.any(Number),
+        },
+        load: {
+          '1m': expect.any(Number),
+          '5m': expect.any(Number),
+          '15m': expect.any(Number),
+        },
+        timestamp: expect.any(Number),
+      }));
+
+      // CPU
+      expect(Array.isArray(data.cpu.cores)).toEqual(true);
+      data.cpu.cores.forEach(core => {
+        expect(core).toMatchObject({
+          load: expect.any(Number),
+          load_user: expect.any(Number),
+          load_system: expect.any(Number),
+          load_nice: expect.any(Number),
+          load_irq: expect.any(Number),
+          idle: expect.any(Number),
+        })
+        expect(Math.round(core.load + core.idle)).toBeLessThanOrEqual(100);
+        expect(core.load_user + core.load_system + core.load_nice + core.load_irq).toBeGreaterThan(core.load - 0.01); // 0.01% margin of error
+        expect(core.load_user + core.load_system + core.load_nice + core.load_irq).toBeLessThan(core.load + 0.01); // 0.01% margin of error
+      });
+      expect(Math.round(data.cpu.average.load + data.cpu.average.idle)).toBeLessThanOrEqual(100);
+      expect(data.cpu.average.load_user + data.cpu.average.load_system + data.cpu.average.load_nice + data.cpu.average.load_irq).toBeGreaterThan(data.cpu.average.load - 0.01); // 0.01% margin of error
+      expect(data.cpu.average.load_user + data.cpu.average.load_system + data.cpu.average.load_nice + data.cpu.average.load_irq).toBeLessThan(data.cpu.average.load + 0.01); // 0.01% margin of error
+      // expect(data.cpu.average.load_user + data.cpu.average.load_system + data.cpu.average.load_nice + data.cpu.average.load_irq).toBeWithinRange(data.cpu.average.load - 0.01, data.cpu.average.load + 0.01); // 0.01% margin of error
+
+      // Memory
+      expect(data.memory.utilizedPercent).toBeLessThanOrEqual(100);
+      expect(data.memory.freeBytes + data.memory.usedBytes).toEqual(data.memory.totalBytes);
+
+      // Uptime
+      expect(typeof (new Date(data.uptime.startedAt))).toEqual('object');
+      expect(data.uptime.startedAt).toBeLessThan(Date.now());
+      expect(data.uptime.startedAt + (data.uptime.seconds * 1000)).toBeLessThan(Date.now());
+      expect(data.uptime.startedAt + (data.uptime.seconds * 1000)).toBeGreaterThan(Date.now() - STATS_FREQUENCY); // Should be within 500ms margin
+
+      // Load
+      // If loadavg is 24 that means on average there are 24 processes in the job queue
+      expect(data.load['1m']).toBeGreaterThanOrEqualTo(0);
+      expect(data.load['5m']).toBeGreaterThanOrEqualTo(0);
+      expect(data.load['15m']).toBeGreaterThanOrEqualTo(0);
+
+      // timestamp
+      expect(data.timestamp).toBeLessThan(Date.now());
+      expect(data.timestamp).toBeGreaterThan(Date.now() - STATS_FREQUENCY);
+    });
+    statsCollector.on('error', (error) => {
+      console.error('Error Occured', error);
     });
     statsCollector.on('close', (data) => {
       console.log('CLOSED STATS COLLECTOR');
     });
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     statsCollector.close();
     await new Promise((resolve) => setTimeout(resolve, 2000));
   });

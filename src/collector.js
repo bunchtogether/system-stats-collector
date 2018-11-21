@@ -26,6 +26,10 @@ class SystemStats extends EventEmitter {
     this.emit('close');
   }
 
+  _error(err) {
+    this.emit('error', err);
+  }
+
   getLoad() {
     const loadAvg = os.loadavg();
     return {
@@ -35,6 +39,32 @@ class SystemStats extends EventEmitter {
     };
   }
 
+  async getCPU2() {
+    try {
+      const currentLoad = await si.currentLoad();
+      return {
+        average: {
+          load: currentLoad.currentload,
+          load_user: currentLoad.currentload_user,
+          load_system: currentLoad.currentload_system,
+          load_nice: currentLoad.currentload_nice,
+          load_irq: currentLoad.currentload_irq,
+          idle: currentLoad.currentload_idle,
+        },
+        coreCount: currentLoad.cpus.length,
+        cores: currentLoad.cpus.map(core => ({
+          load: core.load,
+          load_user: core.load_user,
+          load_system: core.load_system,
+          load_nice: core.load_nice,
+          load_irq: core.load_irq,
+          idle: core.load_idle,
+        })),
+      }
+    } catch (error) {
+      this._error(error);
+    }
+  }
 
   getCPU() {
     const cpus = os.cpus();
@@ -73,6 +103,13 @@ class SystemStats extends EventEmitter {
         idle: Math.round(idleFreq / data.cores.length),
         irq: Math.round(irqFreq / data.cores.length),
         total: Math.round(totalFreq / data.cores.length),
+      },
+      averagePercent: {
+        user: parseFloat((100 * (userFreq / totalFreq)).toFixed(2)),
+        nice: parseFloat((100 * (niceFreq / totalFreq)).toFixed(2)),
+        sys: parseFloat((100 * (sysFreq / totalFreq)).toFixed(2)),
+        idle: parseFloat((100 * (idleFreq / totalFreq)).toFixed(2)),
+        irq: parseFloat((100 * (irqFreq / totalFreq)).toFixed(2)),
       }
     });
     return data;
@@ -85,6 +122,7 @@ class SystemStats extends EventEmitter {
     return {
       'totalBytes': totalMem,
       'freeBytes': freeMem,
+      'usedBytes': (totalMem - freeMem),
       'utilizedPercent': parseFloat((((totalMem - freeMem) / totalMem) * 100).toFixed(2)),
     };
   }
@@ -112,24 +150,27 @@ class SystemStats extends EventEmitter {
       const timeout = new Promise(resolve => setTimeout(() => resolve(defaultValues), this.updateFrequency / 2));
       return Promise.race([stats, timeout])
     } catch (error) {
-      console.log(error)
-      return defaultValues;
+      this._error(error)
     }
   }
 
 
   async collectStats() {
-    const networkStats = await this.getNetwork();
-    this.emit('stats', {
-      cpu: this.getCPU(),
-      network: networkStats,
-      memory: this.getMemory(),
-      uptime: this.getUptime(),
-      load: this.getLoad(),
-      timestamp: Date.now()
-    })
+    try {
+      const networkStats = await this.getNetwork();
+      const cpuStats = await this.getCPU2();
+      this.emit('stats', {
+        cpu: cpuStats,
+        network: networkStats,
+        memory: this.getMemory(),
+        uptime: this.getUptime(),
+        load: this.getLoad(),
+        timestamp: Date.now()
+      })
+    } catch (error) {
+      this._error(error);
+    }
   }
-
 };
 
 module.exports = SystemStats;
