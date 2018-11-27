@@ -37,6 +37,7 @@ describe('Collect Stats', () => {
           tx_sec: expect.any(Number),
           ms: expect.any(Number),
         },
+        disk: expect.any(Array),
         memory: {
           totalBytes: expect.any(Number),
           freeBytes: expect.any(Number),
@@ -84,6 +85,19 @@ describe('Collect Stats', () => {
       expect(data.uptime.startedAt).toBeLessThan(Date.now());
       expect(data.uptime.startedAt + (data.uptime.seconds * 1000)).toBeLessThan(Date.now());
       expect(data.uptime.startedAt + (data.uptime.seconds * 1000)).toBeGreaterThan(Date.now() - STATS_FREQUENCY); // Should be within 500ms margin
+
+      // Disk
+      expect(Array.isArray(data.disk)).toEqual(true);
+      data.disk.forEach((disk) => {
+        expect(disk).toMatchObject({
+          fs: expect.any(String),
+          type: expect.any(String),
+          size: expect.any(Number),
+          used: expect.any(Number),
+          use: expect.any(Number),
+          mount: expect.any(String),
+        });
+      });
 
       // Load
       // If loadavg is 24 that means on average there are 24 processes in the job queue
