@@ -5,7 +5,7 @@ System Stats Collector
 
     const SystemStatsCollector = require('system-stats-collector');
 
-    const collector = new SystemStatsCollector({ frequency: 5000 }); // Reports stats every 5 secs
+    const collector = new SystemStatsCollector({ interval: 5000 }); // Reports stats every 5 secs
 
     collector.on('stats', (data) => {
         // process stats here

@@ -4,22 +4,30 @@ const si = require('systeminformation');
 const EventEmitter = require('events');
 
 type SystemStatsOptions = {
-  frequency: number,
+  interval: number,
+  interface?: string,
 };
 
 const defaultOptions: SystemStatsOptions = {
-  frequency: 2000,
+  interval: 5000,
 };
 
 
 class SystemStats extends EventEmitter {
-  updateFrequency: number;
+  updateInterval: number;
+  timeout: number;
   intervalId: IntervalID;
+  interface: string | null;
 
   constructor(options?: SystemStatsOptions = defaultOptions) {
     super();
-    this.updateFrequency = options.frequency || 1000;
-    this.intervalId = setInterval(this.collectStats.bind(this), this.updateFrequency);
+    this.updateInterval = options.interval || 1000;
+    this.intervalId = setInterval(this.collectStats.bind(this), this.updateInterval);
+    this.timeout = Math.round(this.updateInterval * 0.5);
+    this.interface = null;
+    if (options.interface) {
+      this.interface = options.interface;
+    }
   }
 
   close() {
@@ -94,8 +102,11 @@ class SystemStats extends EventEmitter {
       ms: 0,
     };
     try {
-      const stats = si.networkStats();
-      const timeout = new Promise((resolve) => setTimeout(() => resolve(defaultValues), this.updateFrequency / 2));
+      if (typeof (this.interface) !== 'string') {
+        this.interface = await si.networkInterfaceDefault();
+      }
+      const stats = si.networkStats(this.interface);
+      const timeout = new Promise((resolve) => setTimeout(() => resolve(defaultValues), this.timeout));
       return Promise.race([stats, timeout]);
     } catch (error) {
       throw error;
@@ -106,7 +117,7 @@ class SystemStats extends EventEmitter {
     const defaultValues = [];
     try {
       const stats = await si.fsSize();
-      const timeout = new Promise((resolve) => setTimeout(() => resolve(defaultValues), this.updateFrequency / 2));
+      const timeout = new Promise((resolve) => setTimeout(() => resolve(defaultValues), this.timeout));
       return Promise.race([stats, timeout]);
     } catch (error) {
       throw error;

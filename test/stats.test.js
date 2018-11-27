@@ -8,11 +8,11 @@ const SystemStats = require('../src');
 
 jest.setTimeout(600000);
 
-const STATS_FREQUENCY = 500;
+const STATS_FREQUENCY = 2000;
 
 describe('Collect Stats', () => {
   test('Collect SystemStats', async () => {
-    const statsCollector = new SystemStats({ frequency: STATS_FREQUENCY });
+    const statsCollector = new SystemStats({ interval: STATS_FREQUENCY });
     let collectStatsClosed = false;
     statsCollector.on('stats', (data) => {
       expect(data).toMatchObject(expect.objectContaining({
@@ -119,7 +119,7 @@ describe('Collect Stats', () => {
       collectStatsClosed = true;
       console.log('Stats Collector Closed'); //eslint-disable-line
     });
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 6000));
     statsCollector.close();
     await new Promise((resolve) => setTimeout(resolve, 2000));
   });
