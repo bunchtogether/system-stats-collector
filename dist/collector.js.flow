@@ -102,15 +102,28 @@ class SystemStats extends EventEmitter {
     }
   }
 
+  async getDisk() {
+    const defaultValues = [];
+    try {
+      const stats = await si.fsSize();
+      const timeout = new Promise((resolve) => setTimeout(() => resolve(defaultValues), this.updateFrequency / 2));
+      return Promise.race([stats, timeout]);
+    } catch (error) {
+      throw error;
+    }
+  }
+
 
   async collectStats() {
     try {
       const networkStats = await this.getNetwork();
       const cpuStats = await this.getCPU();
+      const diskStats = await this.getDisk();
       this.emit('stats', {
         cpu: cpuStats,
         network: networkStats,
         memory: this.getMemory(),
+        disk: diskStats,
         uptime: this.getUptime(),
         load: this.getLoad(),
         timestamp: Date.now(),
