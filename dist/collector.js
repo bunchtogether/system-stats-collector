@@ -18,12 +18,14 @@ class SystemStats extends EventEmitter {
                   
                          
                            
+                              
 
   constructor(options                      = defaultOptions) {
     super();
     this.updateInterval = options.interval || 1000;
     this.intervalId = setInterval(this.collectStats.bind(this), this.updateInterval);
-    this.timeout = Math.round(this.updateInterval * 0.5);
+    this.timeout = Math.round(this.updateInterval * 0.95);
+    this.networkStats = [];
     this.interface = null;
     if (options.interface) {
       this.interface = options.interface;
@@ -105,9 +107,20 @@ class SystemStats extends EventEmitter {
       if (typeof (this.interface) !== 'string') {
         this.interface = await si.networkInterfaceDefault();
       }
-      const stats = si.networkStats(this.interface);
-      const timeout = new Promise((resolve) => setTimeout(() => resolve(defaultValues), this.timeout));
-      return Promise.race([stats, timeout]);
+      const results = await si.networkStats(this.interface);
+      const filterdResult = results.filter((res) => res.iface === this.interface);
+      if (Array.isArray(filterdResult) && filterdResult.length === 1) {
+        return {
+          iface: filterdResult[0].iface,
+          operstate: filterdResult[0].operstate,
+          rx: filterdResult[0].rx_bytes,
+          tx: filterdResult[0].tx_bytes,
+          rx_sec: filterdResult[0].rx_sec,
+          tx_sec: filterdResult[0].tx_sec,
+          ms: filterdResult[0].ms,
+        };
+      }
+      return Object.assign({}, defaultValues, { iface: this.interface });
     } catch (error) {
       throw error;
     }
@@ -127,10 +140,12 @@ class SystemStats extends EventEmitter {
 
   async collectStats() {
     try {
+      // const startTime = Date.now();
       const networkStats = await this.getNetwork();
       const cpuStats = await this.getCPU();
       const diskStats = await this.getDisk();
-      this.emit('stats', {
+
+      const aggStats = {
         cpu: cpuStats,
         network: networkStats,
         memory: this.getMemory(),
@@ -138,7 +153,10 @@ class SystemStats extends EventEmitter {
         uptime: this.getUptime(),
         load: this.getLoad(),
         timestamp: Date.now(),
-      });
+      };
+      this.emit('stats', aggStats);
+      // const endTime = Date.now();
+      // console.debug(`Collected stats in ${endTime - startTime}ms`, JSON.stringify(aggStats));
     } catch (error) {
       this.emit('error', error);
     }

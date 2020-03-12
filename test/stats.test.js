@@ -8,7 +8,16 @@ const SystemStats = require('../src');
 
 jest.setTimeout(600000);
 
-const STATS_FREQUENCY = 2000;
+const STATS_FREQUENCY = 5000;
+
+const networkPacketsPerSecFormatter = (text) => { // eslint-disable-line
+  const bytes = Number(text);
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toPrecision(3)} ${sizes[i]}`; // eslint-disable-line
+};
 
 describe('Collect Stats', () => {
   test('Collect SystemStats', async () => {
