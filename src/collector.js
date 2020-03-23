@@ -73,15 +73,14 @@ class SystemStats extends EventEmitter {
     }
   }
 
-  getMemory() {
+  async getMemory() {
     const totalMem = os.totalmem();
-    const freeMem = os.freemem();
-
+    const { available } = await si.mem();
     return {
       totalBytes: totalMem,
-      freeBytes: freeMem,
-      usedBytes: (totalMem - freeMem),
-      utilizedPercent: parseFloat((((totalMem - freeMem) / totalMem) * 100).toFixed(2)),
+      freeBytes: available,
+      usedBytes: (totalMem - available),
+      utilizedPercent: parseFloat((((totalMem - available) / totalMem) * 100).toFixed(2)),
     };
   }
 
@@ -144,11 +143,12 @@ class SystemStats extends EventEmitter {
       const networkStats = await this.getNetwork();
       const cpuStats = await this.getCPU();
       const diskStats = await this.getDisk();
+      const memoryStats = await this.getMemory();
 
       const aggStats = {
         cpu: cpuStats,
         network: networkStats,
-        memory: this.getMemory(),
+        memory: memoryStats,
         disk: diskStats,
         uptime: this.getUptime(),
         load: this.getLoad(),
