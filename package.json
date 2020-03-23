@@ -1,6 +1,6 @@
 {
   "name": "system-stats-collector",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "System Stats Collector",
   "main": "dist/index.js",
   "repository": "git@github.com:bunchtogether/system-stats-collector.git",
