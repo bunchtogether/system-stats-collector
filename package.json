@@ -54,6 +54,6 @@
     "uuid": "^3.3.2"
   },
   "dependencies": {
-    "systeminformation": "^4.23.1"
+    "systeminformation": "^5.6.4"
   }
 }
