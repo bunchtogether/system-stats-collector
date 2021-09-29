@@ -1,5 +1,5 @@
 {
-  "name": "system-stats-collector",
+  "name": "@bunchtogether/system-stats-collector",
   "version": "1.0.5",
   "description": "System Stats Collector",
   "main": "dist/index.js",
